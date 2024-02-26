@@ -1,5 +1,4 @@
 import sys, getopt
-import fileinput
 
 def get_file_bytes(lines):
    count = 0
@@ -24,16 +23,16 @@ def get_file_characters(lines):
       count += len(line)
    return count
 
-def main(argv):
-    try:
+def main(argv):   
+   try:
       lines = []
       
       stream = not sys.stdin.isatty()
 
-      if stream:
+      if stream:         
          lines = get_lines_from_stdin()
          opt, filename = get_opts(argv, stream)
-      else :
+      else :         
          opt, filename = get_opts(argv, stream)
          lines = get_lines_from_file(filename)
 
@@ -48,17 +47,17 @@ def main(argv):
          results.append(get_file_characters(lines))
       
       print(("".join([str(result).rjust(8) for result in results]))+(" "+filename if filename != None else ""))   
-    except getopt.GetoptError as error:
+   except getopt.GetoptError as error:
       print(f'Error {error}')
       sys.exit()
 
 def get_lines_from_file(filename):
    lines = []
    try:
-      if filename != None:
-         with open(filename,'r',encoding="utf8") as file :
-            for line in file:
-               lines.append(line)         
+      if filename != None:         
+         with open(filename,'rb') as file :
+            for line in file:               
+               lines.append(line.decode())         
    except Exception as error:
       print(f"Error opening file {filename} : {error}")
       sys.exit()
@@ -68,22 +67,21 @@ def get_lines_from_file(filename):
 def get_lines_from_stdin():
    lines = []
    try:   
-      with fileinput.input(encoding="utf-8") as f:
-         for line in f:
-            current_line = line.strip("\n")
+      for line in sys.stdin.buffer:                        
+            current_line = line.decode()
             lines.append(current_line)
    except:
       pass
    return lines
 
 def get_opts(argv, stream):
-    (opt, filename) = (None, None)
-    opts, args = getopt.getopt(argv, "hclwm" if stream else "hc:l:w:m:")
-    if len(opts) > 0:      
-       (opt, filename) = opts[0] 
-    elif len(args) > 0:
-       (opt, filename) = (None,args[0])
-    return opt,filename
+   (opt, filename) = (None, None)
+   opts, args = getopt.getopt(argv, "hclwm" if stream else "hc:l:w:m:")
+   if len(opts) > 0:      
+      (opt, filename) = opts[0] 
+   elif len(args) > 0:
+      (opt, filename) = (None,args[0])
+   return opt,filename
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+   main(sys.argv[1:])
