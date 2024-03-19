@@ -6,7 +6,7 @@ def parse(filename):
         print(filename)
         with open(f"./test/{filename}","r") as file:
             contents = file.read()            
-            return json_parser.parse(contents)            
+            return json_parser.parse(contents,[])
     except Exception as e:         
         raise(e)
 

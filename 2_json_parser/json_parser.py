@@ -1,5 +1,6 @@
 import re
 from collections import deque
+import sys
 
 def valid_int(x):
     try:
@@ -63,9 +64,10 @@ valid_object_value = lambda x : x in '[{' or \
                             valid_float(x)
 valid_end_object = lambda x : x in ',}]' and x not in ':'
 
-def parse(contents):
+def parse(contents,errors):
     contents = contents.strip() if contents else ""
     if len(contents) == 0:
+        errors.append("Empty contents")
         return False
     
     content_tokens = []
@@ -128,47 +130,94 @@ def parse(contents):
             valid = valid_brace_match(startToken, x)
 
         if len(stack) == 0 and i+1 < len(content_tokens):
+            errors.append("Unbalanced braces")
             return False
         elif len(stack) == 0:
             return valid  
         elif len(stack) == 20:
+            errors.append("Braces too deep")
             return False
         
-        if i+1 == len(content_tokens) and len(stack) > 0:            
+        if i+1 == len(content_tokens) and len(stack) > 0:
+            errors.append("Unbalanced braces")
             return False
         
         inArray = False        
         if stack[-1] == '[':
             inArray = True
-        elif stack[-1] == '{':
+        elif stack[-1] == '{':            
             inArray = False
         valid = True            
         next = content_tokens[i+1]
         
+        message = None
         match x:
             case '[' : 
                 valid = valid_start_array(next)
+                message = "Invalid array item"
             case '{' : 
                 valid = valid_start_object(next)
+                message = "Invalid object key"
             case ']' : 
                 valid = valid_end_array(next)
+                message = "Invalid array ending"
             case '}' : 
                 valid = valid_end_object(next)
+                message = "Invalid object end"
             case _ :
                 if inArray:
                     valid = valid_array_item(x,next)
+                    message = "Invalid array item"
                 else : 
                     if (content_tokens[i-1] in "{," and next == ":"):
                         valid = valid_object_key(x)
+                        message = "Invalid object key"
                     elif x == ':' :
                         valid = valid_object_value(next)
+                        message = "Invalid object value"
                     elif x == ',' :                        
                         valid = valid_object_key(next)
+                        message = "Invalid object key"
                     else :
                         valid = valid_object_value(x)
+                        message = "Invalid object value"
                 if valid:    
                     valid = valid_non_duplicate(x,next)
+                    message = "Unexpected duplication"
         
         if not valid:
+            errors.append(message)
             return False
     return True    
+
+def get_lines_from_stdin():
+   lines = []
+   try:   
+      for line in sys.stdin.buffer:                        
+            current_line = line.decode()
+            lines.append(current_line)
+   except:
+      pass
+   return lines
+
+
+def main():    
+    stream = not sys.stdin.isatty()    
+    contents=None
+    if stream:         
+        lines = get_lines_from_stdin()
+        contents = "".join(lines)            
+
+    if not contents or len(contents) == 0:
+        print("JSON input required")
+        sys.exit(-1)
+    
+    errors = []
+    if parse(contents, errors):        
+        sys.exit(0)
+    else :    
+        print(f"Invalid JSON {errors}")
+        sys.exit(1)    
+
+if __name__ == '__main__':
+    main()
